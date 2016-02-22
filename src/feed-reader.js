@@ -36,6 +36,7 @@ var toJSON = (source) => {
         if (ob && bella.isObject(ob)) {
           return resolve(ob);
         }
+
         return fallback();
       } catch (e) {
         return fallback(e);
@@ -82,17 +83,32 @@ var normalize = (link, title, pubDate, creator, description, content, enclosure,
   // title = Entity.decode(title);
   //
   // link = Entity.decode(link);
+  let normalized;
+  try {
+    normalized =  {
+      link: link,
+      title: Entity.decode(title),
+      description: Entity.decode(description),
+      publishedDate: pubtime,
+      author: creator,
+      content: Entity.decode(content),
+      enclosure: enclosure,
+      image: image
+    };
+  } catch(err) {
+    normalized =  {
+      link: link,
+      title: title,
+      description: description,
+      publishedDate: pubtime,
+      author: creator,
+      content: content,
+      enclosure: enclosure,
+      image: image
+    };
+  }
 
-  return {
-    link: link,
-    title: title,
-    description: description,
-    publishedDate: pubtime,
-    author: creator,
-    content: content,
-    enclosure: enclosure,
-    image: image
-  };
+  return normalized;
 };
 
 var toRSS = (res) => {
@@ -127,7 +143,7 @@ var toATOM = (res) => {
   let a = {
     title: res.title || '',
     link: res.link,
-    image: res.image,    
+    image: res.image,
     description: res.description,
     entries: []
   };
