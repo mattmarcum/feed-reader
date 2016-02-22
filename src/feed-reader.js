@@ -46,54 +46,52 @@ var toJSON = (source) => {
   });
 };
 
-var normalize = (link, title, pubDate, creator, description, content) => {
-
+var normalize = (link, title, pubDate, creator, description, content, enclosure, image) => {
   if (!link || !title) {
     return false;
   }
 
-  let pubtime = bella.date.utc(pubDate);
+   let pubtime = bella.date.utc(pubDate);
 
   if (!pubtime) {
     return false;
   }
 
-  if (creator) {
-    creator = Entity.decode(creator);
-    creator = bella.ucwords(creator);
-  }
-
-  if (content) {
-    content = Entity.decode(content);
-  }
-
-  if (description) {
-    description = Entity.decode(description);
-    description = bella.stripTags(description);
-  } else if (content) {
-    description = bella.stripTags(content);
-  }
-
-  if (description) {
-    description = description.replace(/(\r\n|\n|\r)/gm, ' ');
-  }
-
-  if (description.length > 160) {
-    description = bella.truncate(description, 156);
-  }
-  description = Entity.decode(description);
-
-  title = Entity.decode(title);
-
-  link = Entity.decode(link);
+  // if (creator) {
+  //   creator = Entity.decode(creator);
+  //   creator = bella.ucwords(creator);
+  // }
+  //
+  // if (content) {
+  //   content = Entity.decode(content);
+  // }
+  //
+  // if (description) {
+  //   description = Entity.decode(description);
+  //   description = bella.stripTags(description);
+  // } else if (content) {
+  //   description = bella.stripTags(content);
+  // }
+  //
+  // if (description) {
+  //   description = description.replace(/(\r\n|\n|\r)/gm, ' ');
+  // }
+  //
+  // description = Entity.decode(description);
+  //
+  // title = Entity.decode(title);
+  //
+  // link = Entity.decode(link);
 
   return {
     link: link,
     title: title,
-    contentSnippet: description,
+    description: description,
     publishedDate: pubtime,
     author: creator,
-    content: content
+    content: content,
+    enclosure: enclosure,
+    image: image
   };
 };
 
@@ -101,6 +99,8 @@ var toRSS = (res) => {
   let a = {
     title: res.title || '',
     link: res.link,
+    image: res.image,
+    description: res.description,
     entries: []
   };
 
@@ -112,8 +112,10 @@ var toRSS = (res) => {
       let pubDate = item.pubDate;
       let creator = item['dc:creator'] || item.author || item.creator || '';
       let content = item['content:encoded'] || item.content || '';
+      let enclosure = item.enclosure || {};
+      let image = item['itunes:image'] ? item['itunes:image'].href : '';
 
-      return normalize(link, title, pubDate, creator, description, content);
+      return normalize(link, title, pubDate, creator, description, content, enclosure, image);
     };
 
     a.entries = res.entries.map(modify);
@@ -125,6 +127,8 @@ var toATOM = (res) => {
   let a = {
     title: res.title || '',
     link: res.link,
+    image: res.image,    
+    description: res.description,
     entries: []
   };
   if (res.entries) {
@@ -156,8 +160,11 @@ var toATOM = (res) => {
       if (bella.isObject(content) && content.$t) {
         content = content.$t;
       }
+      let enclosure = item.enclosure || {};
+      let image = item['itunes:image'] ? item['itunes:image'].href : '';
 
-      return normalize(link, title, pubDate, creator, description, content);
+
+      return normalize(link, title, pubDate, creator, description, content, enclosure, image);
     };
 
     a.entries = res.entries.map(modify);
@@ -179,6 +186,8 @@ var parse = (url) => {
         let a = {
           title: t.title,
           link: url,
+          image: t['itunes:image'] ? t['itunes:image'].href : '',
+          description: t.description || '',
           entries: t.item
         };
         result = toRSS(a);
@@ -191,6 +200,8 @@ var parse = (url) => {
         let a = {
           title: t.title,
           link: url,
+          image: t['itunes:image'].href || '',
+          description: t.description || '',
           entries: t.entry
         };
         result = toATOM(a);
